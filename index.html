@@ -273,6 +273,49 @@ tbody tr:last-child td{border-bottom:none;}
   .kg{grid-template-columns:1fr 1fr;}
   .frow,.sbins{flex-direction:column;align-items:stretch;}
 }
+
+/* ─── LOGIN SCREEN ─── */
+#login-screen{position:fixed;inset:0;z-index:9999;background:var(--dark);display:flex;align-items:center;justify-content:center;}
+#login-screen.hidden{display:none!important;}
+.lgw{width:100%;max-width:400px;padding:0 1.5rem;}
+.lg-logo{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:2.5rem;}
+.lg-logo img{width:64px;height:auto;filter:brightness(1.05);}
+.lg-title{font-family:'Nunito',sans-serif;font-weight:900;font-size:1.5rem;color:#fff;letter-spacing:-.5px;}
+.lg-sub{font-size:.68rem;font-weight:700;color:rgba(255,255,255,.25);text-transform:uppercase;letter-spacing:2.5px;margin-top:2px;}
+.lg-card{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:22px;padding:2rem 1.8rem;backdrop-filter:blur(20px);}
+.lg-hd{font-family:'Nunito',sans-serif;font-weight:900;color:#fff;font-size:1.1rem;margin-bottom:.25rem;}
+.lg-hdsub{font-size:.78rem;color:rgba(255,255,255,.35);margin-bottom:1.5rem;}
+.lg-lbl{display:block;font-size:.73rem;font-weight:700;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:1px;margin-bottom:.4rem;font-family:'Nunito',sans-serif;}
+.lg-inp{width:100%;padding:11px 14px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:11px;color:#fff;font-size:.9rem;font-family:'Nunito Sans',sans-serif;font-weight:600;outline:none;transition:border-color .2s;margin-bottom:1rem;}
+.lg-inp:focus{border-color:var(--primary);}
+.lg-inp::placeholder{color:rgba(255,255,255,.2);}
+.lg-btn{width:100%;padding:13px;background:var(--primary);color:#fff;border:none;border-radius:12px;font-size:.92rem;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:.5rem;}
+.lg-btn:hover{background:var(--primary-h);transform:translateY(-1px);}
+.lg-btn:active{transform:none;}
+.lg-btn:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.lg-err{background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.2);color:#fca5a5;border-radius:10px;padding:10px 13px;font-size:.8rem;font-weight:600;font-family:'Nunito',sans-serif;margin-bottom:1rem;display:none;}
+.lg-err.show{display:block;}
+.lg-pw-wrap{position:relative;margin-bottom:1rem;}
+.lg-pw-wrap .lg-inp{margin-bottom:0;padding-right:44px;}
+.lg-pw-toggle{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(255,255,255,.3);padding:0;transition:color .2s;}
+.lg-pw-toggle:hover{color:rgba(255,255,255,.7);}
+.lg-spinner{width:18px;height:18px;border:2.5px solid rgba(255,255,255,.3);border-top-color:#fff;border-radius:50%;animation:spin .6s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+/* Hide role selector from topbar when using login */
+#role-sel-wrap{display:none!important;}
+
+
+/* ─── AUTOCOMPLETE DROPDOWN ─── */
+.ac-wrap{position:relative;}
+.ac-drop{position:absolute;top:calc(100% + 4px);left:0;right:0;background:var(--surf);border:1.5px solid var(--bord);border-radius:var(--r);box-shadow:var(--sh);z-index:3000;max-height:220px;overflow-y:auto;display:none;}
+.ac-drop.open{display:block;}
+.ac-item{padding:9px 13px;font-size:.84rem;font-weight:600;cursor:pointer;color:var(--txt);font-family:'Nunito Sans',sans-serif;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--bord);transition:background .15s;}
+.ac-item:last-child{border-bottom:none;}
+.ac-item:hover,.ac-item.sel{background:var(--primary-soft);color:var(--primary);}
+.ac-item .ac-icon{font-size:16px;color:var(--muted);}
+.ac-item .ac-sub{font-size:.71rem;color:var(--muted);font-weight:500;}
+.ac-item em{font-style:normal;font-weight:900;color:var(--primary);}
+
 </style>
 </head>
 <body>
@@ -296,7 +339,7 @@ tbody tr:last-child td{border-bottom:none;}
     <div class="na" id="nav-usr" onclick="nav('usr')"><span class="i">group</span><span class="nl">Usuários</span></div>
     <div class="na" id="nav-cfg" onclick="nav('cfg')"><span class="i">settings</span><span class="nl">Configurações</span></div>
     <div class="sbf">
-      <div class="na" style="color:#ff7b7b;"><span class="i">logout</span><span class="nl">Sair</span></div>
+      <div class="na" style="color:#ff7b7b;" onclick="doLogout()"><span class="i">logout</span><span class="nl">Sair</span></div>
     </div>
   </div>
 </nav>
@@ -309,17 +352,22 @@ tbody tr:last-child td{border-bottom:none;}
   </div>
   <div style="display:flex;align-items:center;gap:10px;">
     <div id="connBdg" class="csbdg loc"><span class="cdot"></span>Modo Local</div>
-    <div style="display:flex;align-items:center;gap:8px;margin-right:8px;">
+    <div id="role-sel-wrap" style="display:flex;align-items:center;gap:8px;margin-right:8px;">
         <select id="role-sel" onchange="applyRole(this.value)" style="font-family:'Nunito',sans-serif;font-size:.75rem;font-weight:700;border:1.5px solid var(--bord);border-radius:10px;padding:5px 10px;background:var(--surf);color:var(--dark);cursor:pointer;outline:none;">
           <option value="admin">👑 Admin</option>
           <option value="gerente">🧑‍💼 Gerente</option>
           <option value="operador">👁 Operador</option>
         </select>
       </div>
-      <div class="uc">
-      <div class="uav">A</div>
-      <span class="unm">Administrador</span>
-      <span class="ubdg">admin</span>
+      <div class="uc" style="gap:10px;">
+        <div class="uav" id="topbar-av">A</div>
+        <div style="display:flex;flex-direction:column;gap:1px;">
+          <span class="unm" id="topbar-nome">Administrador</span>
+          <span class="ubdg" id="topbar-role">admin</span>
+        </div>
+        <button onclick="doLogout()" title="Sair do sistema" style="background:none;border:none;cursor:pointer;padding:4px;border-radius:8px;color:var(--muted);transition:all .2s;display:flex;align-items:center;margin-left:2px;" onmouseover="this.style.color='var(--err)';this.style.background='var(--err-s)'" onmouseout="this.style.color='var(--muted)';this.style.background='none'">
+          <span class="i" style="font-size:20px;">logout</span>
+        </button>
     </div>
   </div>
 </div>
@@ -547,17 +595,24 @@ tbody tr:last-child td{border-bottom:none;}
     </div>
     <div class="fst"><span class="i">person</span>Proprietário</div>
     <div class="fr">
-      <div class="fg fu"><label class="fl">Nome Completo *</label><input type="text" class="fc" id="cf_cli" placeholder="Nome do proprietário"></div>
-      <div class="fg"><label class="fl">CPF</label><input type="text" class="fc" id="cf_cpf" placeholder="000.000.000-00"></div>
-      <div class="fg"><label class="fl">Telefone</label><input type="text" class="fc" id="cf_tel" placeholder="(00) 00000-0000"></div>
+      <div class="fg fu ac-wrap">
+        <label class="fl">Nome do Proprietário *</label>
+        <input type="text" class="fc" id="cf_cli" placeholder="Digite para buscar cliente..." autocomplete="off"
+          oninput="acCliente(this.value)" onkeydown="acNavKey(event,'ac-cli')">
+        <div class="ac-drop" id="ac-cli"></div>
+      </div>
     </div>
     <div class="fst"><span class="i">two_wheeler</span>Veículo</div>
     <div class="fr">
-      <div class="fg"><label class="fl">Placa *</label><input type="text" class="fc" id="cf_placa" placeholder="ABC1D23" style="text-transform:uppercase;"></div>
+      <div class="fg ac-wrap">
+        <label class="fl">Placa *</label>
+        <input type="text" class="fc" id="cf_placa" placeholder="Ex: ABC1D23" style="text-transform:uppercase;" autocomplete="off"
+          oninput="acPlaca(this.value)" onkeydown="acNavKey(event,'ac-placa')">
+        <div class="ac-drop" id="ac-placa"></div>
+      </div>
       <div class="fg"><label class="fl">Marca</label><input type="text" class="fc" id="cf_marca" placeholder="Honda"></div>
       <div class="fg"><label class="fl">Modelo *</label><input type="text" class="fc" id="cf_modelo" placeholder="CB 300F Twister"></div>
       <div class="fg"><label class="fl">Ano</label><input type="text" class="fc" id="cf_anov" placeholder="2024/2025"></div>
-
     </div>
     <div class="fst"><span class="i">payments</span>Termos</div>
     <div class="fr">
@@ -741,7 +796,7 @@ let DB = {
     {id:'u1',nome:'Administrador',email:'admin@2mmotos.com.br',perfil:'admin',status:'ativo',ultimo_acesso:'2026-03-23'},
     {id:'u2',nome:'Carlos Vendedor',email:'carlos@2mmotos.com.br',perfil:'gerente',status:'ativo',ultimo_acesso:'2026-03-22'},
     {id:'u3',nome:'Ana Relatórios',email:'ana@2mmotos.com.br',perfil:'gerente',status:'ativo',ultimo_acesso:'2026-03-20'},
-    {id:'u4',nome:'Pedro Estoque',email:'pedro@2mmotos.com.br',perfil:'operador',status:'inativo',ultimo_acesso:'2026-02-15'},
+    {id:'u4',nome:'Pedro Estoque',email:'pedro@2mmotos.com.br',perfil:'operador',status:'ativo',ultimo_acesso:'2026-02-15'},
   ]
 };
 
@@ -1156,7 +1211,7 @@ function closeModal(t){ document.getElementById('mo-'+t).classList.remove('op');
 function editCons(id){
   const r=DB.cons.find(x=>x.id==id); if(!r)return;
   editId.cons=id; document.getElementById('mo-cons-title').textContent='Editar Consignação';
-  const f={'cf_data':'data_entrada','cf_mes':'mes','cf_st':'status','cf_cli':'cliente','cf_cpf':'cpf','cf_tel':'telefone','cf_placa':'placa','cf_marca':'marca','cf_modelo':'modelo','cf_anov':'ano_veiculo','cf_cor':'cor','cf_km':'km','cf_chassi':'chassi','cf_renavam':'renavam','cf_valor':'valor_contratual','cf_com':'comissao_percentual','cf_ctr':'modelo_contrato','cf_obs':'observacao'};
+  const f={'cf_data':'data_entrada','cf_mes':'mes','cf_st':'status','cf_cli':'cliente','cf_placa':'placa','cf_marca':'marca','cf_modelo':'modelo','cf_anov':'ano_veiculo','cf_valor':'valor_contratual','cf_com':'comissao_percentual','cf_ctr':'modelo_contrato','cf_obs':'observacao'};
   Object.entries(f).forEach(([fid,key])=>{ const el=document.getElementById(fid); if(el) el.value=r[key]??''; });
   document.getElementById('mo-cons').classList.add('op');
 }
@@ -1177,8 +1232,12 @@ function editEsto(id){
 function editUsr(id){
   const r=DB.usr.find(x=>x.id==id); if(!r)return;
   editId.usr=id; document.getElementById('mo-usr-title').textContent='Editar Usuário';
-  document.getElementById('uf_nome').value=r.nome||''; document.getElementById('uf_email').value=r.email||'';
-  document.getElementById('uf_perfil').value=r.perfil||'operador'; document.getElementById('uf_st').value=r.status||'ativo';
+  document.getElementById('uf_nome').value=r.nome||'';
+  document.getElementById('uf_email').value=r.email||'';
+  document.getElementById('uf_perfil').value=r.perfil||'operador';
+  document.getElementById('uf_st').value=r.status||'ativo';
+  document.getElementById('uf_pw').value='';
+  document.getElementById('uf_pw').placeholder=editId.usr?'Nova senha (deixe vazio para manter)':'Senha obrigatória';
   document.getElementById('mo-usr').classList.add('op');
 }
 
@@ -1189,21 +1248,24 @@ async function saveCons(){
   const cli=document.getElementById('cf_cli').value.trim();
   const placa=document.getElementById('cf_placa').value.trim().toUpperCase();
   const modelo=document.getElementById('cf_modelo').value.trim();
-  if(!cli||!placa||!modelo){showToast('Preencha nome, placa e modelo.','er');return;}
-  const rec={mes:document.getElementById('cf_mes').value,data_entrada:document.getElementById('cf_data').value,
-    cliente:cli.toUpperCase(),cpf:document.getElementById('cf_cpf').value.trim()||null,
-    telefone:document.getElementById('cf_tel').value.trim()||null,placa,
+  if(!cli){showToast('Selecione ou informe o nome do proprietário.','er');return;}
+  if(!placa){showToast('Informe a placa do veículo.','er');return;}
+  const rec={
+    mes:document.getElementById('cf_mes').value,
+    data_entrada:document.getElementById('cf_data').value,
+    cliente:cli.toUpperCase(),
+    placa,
     marca:document.getElementById('cf_marca').value.trim().toUpperCase()||null,
-    modelo:modelo.toUpperCase(),ano_veiculo:document.getElementById('cf_anov').value.trim()||null,
-    cor:document.getElementById('cf_cor').value.trim()||null,km:+document.getElementById('cf_km').value||null,
-    chassi:document.getElementById('cf_chassi').value.trim().toUpperCase()||null,
-    renavam:document.getElementById('cf_renavam').value.trim()||null,
+    modelo:modelo.toUpperCase()||null,
+    ano_veiculo:document.getElementById('cf_anov').value.trim()||null,
     valor_contratual:parseFloat(document.getElementById('cf_valor').value)||null,
     comissao_percentual:parseFloat(document.getElementById('cf_com').value)||10,
     modelo_contrato:document.getElementById('cf_ctr').value,
     observacao:document.getElementById('cf_obs').value.trim().toUpperCase()||null,
-    status:document.getElementById('cf_st').value};
+    status:document.getElementById('cf_st').value
+  };
   await saveRec('cons',rec); renderCons(); updateConsTabs(); renderDash();
+  acClose('ac-cli'); acClose('ac-placa');
 }
 async function saveClie(){
   const nome=document.getElementById('clf_nome').value.trim();
@@ -1220,14 +1282,59 @@ async function saveEsto(){
     ano:document.getElementById('ef_ano').value.trim()||null};
   await saveRec('esto',rec); renderEsto(); renderDash();
 }
-function saveUsr(){
-  const nome=document.getElementById('uf_nome').value.trim();
-  const email=document.getElementById('uf_email').value.trim();
-  if(!nome||!email){showToast('Preencha nome e e-mail.','er');return;}
-  const rec={nome,email,perfil:document.getElementById('uf_perfil').value,status:document.getElementById('uf_st').value,ultimo_acesso:new Date().toISOString().split('T')[0]};
-  if(editId.usr){ const i=DB.usr.findIndex(r=>r.id==editId.usr); if(i>=0) DB.usr.splice(i,1,{...rec,id:editId.usr}); }
-  else DB.usr.unshift({...rec,id:'u'+Date.now()});
-  closeModal('usr'); renderUsr(); showToast(editId.usr?'Usuário atualizado!':'Usuário criado!');
+async function saveUsr(){
+  const nome  = document.getElementById('uf_nome').value.trim();
+  const email = document.getElementById('uf_email').value.trim();
+  if(!nome || !email){ showToast('Preencha nome e e-mail.','er'); return; }
+
+  const pw     = document.getElementById('uf_pw').value.trim();
+  const isNovo = !editId.usr;
+
+  if(isNovo && !pw){
+    showToast('Defina uma senha para o novo usuário.','er');
+    return;
+  }
+
+  const rec = {
+    nome,
+    email,
+    perfil: document.getElementById('uf_perfil').value,
+    status: document.getElementById('uf_st').value,
+    ultimo_acesso: new Date().toISOString().split('T')[0]
+  };
+  if(pw) rec.senha = pw; // só inclui senha se foi preenchida
+
+  if(!isSB){
+    showToast('Sem conexão com o banco. Usuário não salvo.','er');
+    return;
+  }
+
+  const btn = document.querySelector('#mo-usr .bsv');
+  if(btn){ btn.disabled=true; btn.innerHTML='<span class="spin"></span> Salvando...'; }
+
+  try{
+    let error;
+    if(isNovo){
+      const res = await SB.from('usuarios').insert(rec);
+      error = res.error;
+    } else {
+      const res = await SB.from('usuarios').update(rec).eq('id', editId.usr);
+      error = res.error;
+    }
+    if(error) throw new Error(error.message);
+
+    // Recarrega lista do banco
+    const {data} = await SB.from('usuarios').select('id,nome,email,perfil,status,ultimo_acesso').order('nome');
+    if(data) DB.usr = data;
+
+    closeModal('usr');
+    renderUsr();
+    showToast(isNovo ? 'Usuário criado!' : 'Usuário atualizado!');
+  } catch(e){
+    showToast('Erro ao salvar: ' + (e.message||e), 'er');
+  } finally {
+    if(btn){ btn.disabled=false; btn.innerHTML='<span class="i">save</span>Salvar'; }
+  }
 }
 
 async function saveRec(tbl, rec){
@@ -1312,23 +1419,283 @@ function showToast(msg,t='ok'){
 //  EVENTS & INIT
 // ═══════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
+
+  // ── Supabase / local connection ──
   const u=localStorage.getItem('sb_u'),k=localStorage.getItem('sb_k');
   if(u&&k){document.getElementById('sbUrl').value=u;document.getElementById('sbKey').value=k;connectSB();}
   else useLocal();
   if(localStorage.getItem('sbcol')==='1') toggleSB();
+
+  // ── Event listeners ──
   ['cons-q','cons-fst','cons-fco'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{pages.cons=1;renderCons();}));
   ['cons-q','cons-fst','cons-fco'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{pages.cons=1;renderCons();}));
-  ['clie-q','clie-ftp'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{pages.clie=1;renderClie();}));
-  ['clie-q','clie-ftp'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{pages.clie=1;renderClie();}));
+  ['clie-q'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{pages.clie=1;renderClie();}));
+  ['clie-q'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{pages.clie=1;renderClie();}));
   ['esto-q','esto-fst','esto-fmr'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{pages.esto=1;renderEsto();}));
   ['esto-q','esto-fst','esto-fmr'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{pages.esto=1;renderEsto();}));
   ['usr-q','usr-fp'].forEach(id=>document.getElementById(id)?.addEventListener('input',renderUsr));
   document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{if(e.target===m){const id=m.id.replace('mo-','');closeModal(id);}}));
-  // fill cfg fields from ls
   const su=localStorage.getItem('sb_u'),sk=localStorage.getItem('sb_k');
   if(su) document.getElementById('cfg-sburl').value=su;
   if(sk) document.getElementById('cfg-sbkey').value=sk;
+
+  // ── Verificação de sessão / login ──
+  const loggedIn   = localStorage.getItem('2m_logged');
+  const savedRole  = localStorage.getItem('2m_role') || 'admin';
+  const savedUser  = localStorage.getItem('2m_user') || 'Usuário';
+  const ls = document.getElementById('login-screen');
+
+  if(loggedIn === '1'){
+    // Já logado — oculta tela de login e aplica role
+    ls.classList.add('hidden');
+    CUR_ROLE = savedRole;
+    CUR_USER = savedUser;
+    // Atualiza topbar
+    const unm=document.querySelector('.unm'); if(unm) unm.textContent=savedUser;
+    const uav=document.querySelector('.uav'); if(uav) uav.textContent=savedUser[0];
+    const badgeMap={admin:'👑 Admin',gerente:'🧑‍💼 Gerente',operador:'👁 Operador'};
+    const ubdg=document.querySelector('.ubdg'); if(ubdg) ubdg.textContent=badgeMap[savedRole]||savedRole;
+    setTimeout(()=>applyRole(savedRole), 150);
+  } else {
+    // Não logado — garante tela de login visível
+    ls.classList.remove('hidden');
+    ls.style.opacity='1';
+    setTimeout(()=>{ const f=document.getElementById('lg-user'); if(f) f.focus(); }, 400);
+  }
 });
+
+// ═══════════════════════════════════════════════════
+//  AUTOCOMPLETE — Cliente e Placa na Consignação
+// ═══════════════════════════════════════════════════
+
+function acClose(id){
+  const d=document.getElementById(id);
+  if(d){d.classList.remove('open');d.innerHTML='';}
+}
+function acCloseAll(){acClose('ac-cli');acClose('ac-placa');}
+
+// Fecha dropdowns ao clicar fora
+document.addEventListener('click',e=>{
+  if(!e.target.closest('.ac-wrap')) acCloseAll();
+});
+
+function highlight(text, q){
+  if(!q) return text;
+  const idx=text.toLowerCase().indexOf(q.toLowerCase());
+  if(idx<0) return text;
+  return text.slice(0,idx)+'<em>'+text.slice(idx,idx+q.length)+'</em>'+text.slice(idx+q.length);
+}
+
+function acNavKey(e, dropId){
+  const drop=document.getElementById(dropId);
+  if(!drop||!drop.classList.contains('open')) return;
+  const items=[...drop.querySelectorAll('.ac-item')];
+  const cur=drop.querySelector('.ac-item.sel');
+  let idx=items.indexOf(cur);
+  if(e.key==='ArrowDown'){e.preventDefault();idx=Math.min(idx+1,items.length-1);}
+  else if(e.key==='ArrowUp'){e.preventDefault();idx=Math.max(idx-1,0);}
+  else if(e.key==='Enter'&&cur){e.preventDefault();cur.click();return;}
+  else if(e.key==='Escape'){acClose(dropId);return;}
+  else return;
+  items.forEach(i=>i.classList.remove('sel'));
+  if(items[idx]){items[idx].classList.add('sel');items[idx].scrollIntoView({block:'nearest'});}
+}
+
+// ── Autocomplete de CLIENTE pelo nome na tabela clientes ──
+function acCliente(q){
+  const drop=document.getElementById('ac-cli');
+  if(!q||q.length<1){acClose('ac-cli');return;}
+  const hits=DB.clie
+    .filter(c=>(c.nome||'').toLowerCase().includes(q.toLowerCase()))
+    .slice(0,8);
+  if(!hits.length){acClose('ac-cli');return;}
+  drop.innerHTML=hits.map(c=>`
+    <div class="ac-item" onclick="pickCliente('${c.nome.replace(/'/g,"\'")}')">
+      <span class="i ac-icon">person</span>
+      <div><div>${highlight(c.nome,q)}</div></div>
+    </div>`).join('');
+  drop.classList.add('open');
+}
+
+function pickCliente(nome){
+  document.getElementById('cf_cli').value=nome;
+  acClose('ac-cli');
+}
+
+// ── Autocomplete de PLACA pela tabela estoque ──
+function acPlaca(q){
+  const drop=document.getElementById('ac-placa');
+  const qUp=q.toUpperCase();
+  if(!q||q.length<1){acClose('ac-placa');return;}
+  const hits=DB.esto
+    .filter(e=>(e.placa||'').toUpperCase().includes(qUp))
+    .slice(0,8);
+  if(!hits.length){acClose('ac-placa');return;}
+  drop.innerHTML=hits.map(e=>`
+    <div class="ac-item" onclick="pickPlaca('${e.placa}','${(e.marca||'').replace(/'/g,"\'")}','${(e.modelo||'').replace(/'/g,"\'")}','${(e.ano||'').replace(/'/g,"\'")}')">
+      <span class="i ac-icon">two_wheeler</span>
+      <div>
+        <div>${highlight(e.placa,qUp)} <span class="ac-sub">${e.marca||''} ${e.modelo||''}</span></div>
+        <div class="ac-sub">${e.ano||''} · ${e.status==='disponivel'?'Disponível':e.status==='reservado'?'Reservado':'Vendido'}</div>
+      </div>
+    </div>`).join('');
+  drop.classList.add('open');
+}
+
+function pickPlaca(placa,marca,modelo,ano){
+  document.getElementById('cf_placa').value=placa;
+  if(marca) document.getElementById('cf_marca').value=marca;
+  if(modelo) document.getElementById('cf_modelo').value=modelo;
+  if(ano)   document.getElementById('cf_anov').value=ano;
+  acClose('ac-placa');
+}
+
+// ═══════════════════════════════════════════════════
+//  AUTENTICAÇÃO / LOGIN
+// ═══════════════════════════════════════════════════
+function showLoginError(msg){
+  const el=document.getElementById('lg-err');
+  el.textContent=msg; el.classList.add('show');
+  document.getElementById('lg-pw').style.borderColor='rgba(239,68,68,.6)';
+  setTimeout(()=>{el.classList.remove('show');document.getElementById('lg-pw').style.borderColor='';},4000);
+}
+function togglePw(){
+  const inp=document.getElementById('lg-pw'), ico=document.getElementById('lg-pw-icon');
+  if(inp.type==='password'){inp.type='text';ico.textContent='visibility_off';}
+  else{inp.type='password';ico.textContent='visibility';}
+}
+async function doLogin(){
+  const userVal = document.getElementById('lg-user').value.trim().toLowerCase();
+  const pwVal   = document.getElementById('lg-pw').value;
+  const btn     = document.getElementById('lg-btn');
+
+  if(!userVal || !pwVal){
+    showLoginError('Preencha usuário e senha.');
+    return;
+  }
+
+  // ── Exige conexão com o banco ──
+  if(!isSB){
+    showLoginError('Sem conexão com o banco de dados. Verifique a configuração do Supabase.');
+    btn.disabled=false;
+    btn.innerHTML='<span class="i" style="font-size:18px;">login</span> Entrar';
+    return;
+  }
+
+  btn.disabled=true;
+  btn.innerHTML='<div class="lg-spinner"></div>';
+
+  try{
+    // Busca usuário ativo pelo e-mail ou nome + valida senha no banco
+    const {data, error} = await SB
+      .from('usuarios')
+      .select('id, nome, email, perfil, status, senha')
+      .eq('status','ativo')
+      .or(`email.ilike.${userVal},nome.ilike.${userVal}`)
+      .limit(10);
+
+    if(error) throw new Error(error.message);
+
+    const usr = (data||[]).find(u => {
+      const matchUser = (u.email||'').toLowerCase() === userVal
+                     || (u.nome||'').toLowerCase()  === userVal;
+      const matchPw   = u.senha === pwVal;
+      return matchUser && matchPw;
+    });
+
+    if(usr){
+      // Atualiza último acesso no banco (sem bloquear o login)
+      SB.from('usuarios')
+        .update({ultimo_acesso: new Date().toISOString().split('T')[0]})
+        .eq('id', usr.id)
+        .then(()=>{});
+      btn.disabled=false;
+      btn.innerHTML='<span class="i" style="font-size:18px;">login</span> Entrar';
+      loginSuccess(usr.nome, usr.perfil);
+    } else {
+      showLoginError('Usuário ou senha incorretos.');
+      document.getElementById('lg-pw').value='';
+      document.getElementById('lg-pw').focus();
+      btn.disabled=false;
+      btn.innerHTML='<span class="i" style="font-size:18px;">login</span> Entrar';
+    }
+  } catch(e){
+    const msg = e.message || 'Erro ao conectar ao banco de dados.';
+    showLoginError('Erro: ' + msg);
+    btn.disabled=false;
+    btn.innerHTML='<span class="i" style="font-size:18px;">login</span> Entrar';
+  }
+}
+function loginSuccess(nome,perfil){
+  CUR_USER=nome; CUR_ROLE=perfil;
+  localStorage.setItem('2m_logged','1');
+  localStorage.setItem('2m_role',perfil);
+  localStorage.setItem('2m_user',nome);
+  // Fade out login screen
+  const ls=document.getElementById('login-screen');
+  ls.style.transition='opacity .35s'; ls.style.opacity='0';
+  setTimeout(()=>ls.classList.add('hidden'),360);
+  // Update topbar
+  const badgeMap={admin:'👑 Admin',gerente:'🧑‍💼 Gerente',operador:'👁 Operador'};
+  const el=id=>document.getElementById(id);
+  if(el('topbar-nome')) el('topbar-nome').textContent=nome;
+  if(el('topbar-av'))   el('topbar-av').textContent=nome[0].toUpperCase();
+  if(el('topbar-role')) el('topbar-role').textContent=badgeMap[perfil]||perfil;
+  // Legacy selectors fallback
+  const unm=document.querySelector('.unm'); if(unm&&unm.id!=='topbar-nome') unm.textContent=nome;
+  const uav=document.querySelector('.uav'); if(uav&&uav.id!=='topbar-av')   uav.textContent=nome[0];
+  const ubdg=document.querySelector('.ubdg');if(ubdg&&ubdg.id!=='topbar-role') ubdg.textContent=badgeMap[perfil]||perfil;
+  // Apply role (hides/shows nav items + renders)
+  applyRole(perfil);
+  // Navigate
+  if(perfil==='operador') nav('cons'); else nav('dash');
+}
+function doLogout(){
+  localStorage.removeItem('2m_logged');
+  localStorage.removeItem('2m_role');
+  localStorage.removeItem('2m_user');
+  document.getElementById('lg-user').value='';
+  document.getElementById('lg-pw').value='';
+  document.getElementById('lg-err').classList.remove('show');
+  const ls=document.getElementById('login-screen');
+  ls.classList.remove('hidden');
+  ls.style.transition='opacity .3s'; ls.style.opacity='0';
+  setTimeout(()=>{ls.style.opacity='1'; document.getElementById('lg-user').focus();},10);
+}
+
 </script>
+
+<!-- ═══════════════════════════════════════ -->
+<!--  TELA DE LOGIN                          -->
+<!-- ═══════════════════════════════════════ -->
+<div id="login-screen">
+  <div class="lgw">
+    <div class="lg-logo">
+      <img src="https://i.ibb.co/DD98rjsH/logo1.png" alt="2M Motos">
+      <div>
+        <div class="lg-title">2M Motos</div>
+        <div class="lg-sub">Gestão de Consignação</div>
+      </div>
+    </div>
+    <div class="lg-card">
+      <div class="lg-hd">Bem-vindo de volta</div>
+      <div class="lg-hdsub">Faça login para continuar</div>
+      <div class="lg-err" id="lg-err"></div>
+      <label class="lg-lbl">Usuário</label>
+      <input class="lg-inp" id="lg-user" type="text" placeholder="seu@email.com ou nome" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('lg-pw').focus()">
+      <label class="lg-lbl">Senha</label>
+      <div class="lg-pw-wrap">
+        <input class="lg-inp" id="lg-pw" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="lg-pw-toggle" onclick="togglePw()" tabindex="-1" type="button">
+          <span class="i" id="lg-pw-icon" style="font-size:20px;">visibility</span>
+        </button>
+      </div>
+      <button class="lg-btn" id="lg-btn" onclick="doLogin()">
+        <span class="i" style="font-size:18px;">login</span> Entrar
+      </button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
