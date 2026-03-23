@@ -378,18 +378,10 @@ tbody tr:last-child td{border-bottom:none;}
 <!-- ══════════════════════════════════════
      SUPABASE CONFIG (global, shown once)
 ══════════════════════════════════════ -->
-<div class="sbb" id="sbb">
-  <span class="i">database</span>
-  <div style="flex:1;">
-    <h4>Conectar ao Supabase</h4>
-    <p>Informe as credenciais do projeto para habilitar persistência em tempo real em todas as seções.</p>
-    <div class="sbins">
-      <input class="sbin" id="sbUrl" type="url" placeholder="https://xxxx.supabase.co">
-      <input class="sbin" id="sbKey" type="text" placeholder="anon public key...">
-      <button class="sbtn" onclick="connectSB()"><span class="i">link</span>Conectar</button>
-      <button class="sbtn loc" onclick="useLocal()"><span class="i">storage</span>Modo Local</button>
-    </div>
-  </div>
+<!-- inputs ocultos mantidos para compatibilidade com connectSB() -->
+<div id="sbb" style="display:none;">
+  <input id="sbUrl" type="hidden">
+  <input id="sbKey" type="hidden">
 </div>
 
 <!-- ══════ PAGE: DASHBOARD ══════ -->
@@ -803,17 +795,18 @@ let DB = {
 // ═══════════════════════════════════════════════════
 //  SUPABASE
 // ═══════════════════════════════════════════════════
-function connectSB() {
+function connectSB(silent=false) {
   const u=document.getElementById('sbUrl').value.trim(), k=document.getElementById('sbKey').value.trim();
-  if(!u||!k){showToast('Preencha URL e chave.','er');return;}
+  if(!u||!k){ if(!silent) showToast('Preencha URL e chave.','er'); return false; }
   try{
     SB=window.supabase.createClient(u,k); isSB=true;
     localStorage.setItem('sb_u',u); localStorage.setItem('sb_k',k);
     document.getElementById('sbb').style.display='none';
-    setConn('ok','Supabase'); showToast('Conectado ao Supabase!');
+    setConn('ok','Supabase');
     setCfgStatus('ok','✅ Conectado com sucesso ao Supabase.');
-    loadAll();
-  }catch(e){showToast('Erro: '+e.message,'er');}
+    if(!silent){ showToast('Conectado ao Supabase!'); loadAll(); }
+    return true;
+  }catch(e){ if(!silent) showToast('Erro: '+e.message,'er'); return false; }
 }
 function useLocal(){
   isSB=false;
@@ -1420,12 +1413,6 @@ function showToast(msg,t='ok'){
 // ═══════════════════════════════════════════════════
 document.addEventListener('DOMContentLoaded',()=>{
 
-  // ── Supabase / local connection ──
-  const u=localStorage.getItem('sb_u'),k=localStorage.getItem('sb_k');
-  if(u&&k){document.getElementById('sbUrl').value=u;document.getElementById('sbKey').value=k;connectSB();}
-  else useLocal();
-  if(localStorage.getItem('sbcol')==='1') toggleSB();
-
   // ── Event listeners ──
   ['cons-q','cons-fst','cons-fco'].forEach(id=>document.getElementById(id)?.addEventListener('input',()=>{pages.cons=1;renderCons();}));
   ['cons-q','cons-fst','cons-fco'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{pages.cons=1;renderCons();}));
@@ -1435,34 +1422,65 @@ document.addEventListener('DOMContentLoaded',()=>{
   ['esto-q','esto-fst','esto-fmr'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{pages.esto=1;renderEsto();}));
   ['usr-q','usr-fp'].forEach(id=>document.getElementById(id)?.addEventListener('input',renderUsr));
   document.querySelectorAll('.mo').forEach(m=>m.addEventListener('click',e=>{if(e.target===m){const id=m.id.replace('mo-','');closeModal(id);}}));
-  const su=localStorage.getItem('sb_u'),sk=localStorage.getItem('sb_k');
-  if(su) document.getElementById('cfg-sburl').value=su;
-  if(sk) document.getElementById('cfg-sbkey').value=sk;
+  if(localStorage.getItem('sbcol')==='1') toggleSB();
 
-  // ── Verificação de sessão / login ──
+  // ── Boot: conecta ao Supabase automaticamente ──
+  bootConnect();
+});
+
+// ── Boot: busca credenciais e conecta automaticamente ───────────────
+const SB_PROJECT_URL = 'https://ipuaanoiqnmczkfeaaqd.supabase.co';
+const SB_ANON_KEY    = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImlwdWFhbm9pcW5tY3prZmVhYXFkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQyNzk1NjUsImV4cCI6MjA4OTg1NTU2NX0.TMhxGPYbxc9pkBd51h8NEWYUzWKXc9nNxaEeA7la7i8';
+
+async function bootConnect(){
+  const ls         = document.getElementById('login-screen');
   const loggedIn   = localStorage.getItem('2m_logged');
   const savedRole  = localStorage.getItem('2m_role') || 'admin';
   const savedUser  = localStorage.getItem('2m_user') || 'Usuário';
-  const ls = document.getElementById('login-screen');
 
-  if(loggedIn === '1'){
-    // Já logado — oculta tela de login e aplica role
-    ls.classList.add('hidden');
-    CUR_ROLE = savedRole;
-    CUR_USER = savedUser;
-    // Atualiza topbar
-    const unm=document.querySelector('.unm'); if(unm) unm.textContent=savedUser;
-    const uav=document.querySelector('.uav'); if(uav) uav.textContent=savedUser[0];
-    const badgeMap={admin:'👑 Admin',gerente:'🧑‍💼 Gerente',operador:'👁 Operador'};
-    const ubdg=document.querySelector('.ubdg'); if(ubdg) ubdg.textContent=badgeMap[savedRole]||savedRole;
-    setTimeout(()=>applyRole(savedRole), 150);
-  } else {
-    // Não logado — garante tela de login visível
-    ls.classList.remove('hidden');
-    ls.style.opacity='1';
-    setTimeout(()=>{ const f=document.getElementById('lg-user'); if(f) f.focus(); }, 400);
+  setDbStatus('connecting','Conectando ao banco de dados...');
+
+  try {
+    // 1. Conecta com as credenciais fixas do projeto
+    SB   = window.supabase.createClient(SB_PROJECT_URL, SB_ANON_KEY);
+    isSB = true;
+
+    // 2. Verifica se o banco está acessível
+    const {error} = await SB.from('usuarios').select('id').limit(1);
+    if(error) throw new Error(error.message);
+
+    // 3. Persiste para uso interno (cfg panel etc.)
+    document.getElementById('sbUrl').value = SB_PROJECT_URL;
+    document.getElementById('sbKey').value = SB_ANON_KEY;
+    localStorage.setItem('sb_u', SB_PROJECT_URL);
+    localStorage.setItem('sb_k', SB_ANON_KEY);
+    const su=document.getElementById('cfg-sburl'), sk=document.getElementById('cfg-sbkey');
+    if(su) su.value=SB_PROJECT_URL;
+    if(sk) sk.value=SB_ANON_KEY;
+
+    setConn('ok','Supabase');
+    setDbStatus('ok','Banco conectado — faça seu login');
+
+    // 4. Sessão já existe? Entra direto
+    if(loggedIn === '1'){
+      CUR_ROLE = savedRole; CUR_USER = savedUser;
+      ls.classList.add('hidden');
+      const badgeMap={admin:'👑 Admin',gerente:'🧑‍💼 Gerente',operador:'👁 Operador'};
+      const el=id=>document.getElementById(id);
+      if(el('topbar-nome')) el('topbar-nome').textContent=savedUser;
+      if(el('topbar-av'))   el('topbar-av').textContent=savedUser[0].toUpperCase();
+      if(el('topbar-role')) el('topbar-role').textContent=badgeMap[savedRole]||savedRole;
+      loadAll();
+      setTimeout(()=>applyRole(savedRole),150);
+    }
+    // Senão, deixa tela de login visível e campos habilitados
+
+  } catch(e){
+    isSB = false;
+    setDbStatus('error','Falha na conexão: '+e.message);
+    console.error('Boot connect error:', e);
   }
-});
+}
 
 // ═══════════════════════════════════════════════════
 //  AUTOCOMPLETE — Cliente e Placa na Consignação
@@ -1553,6 +1571,34 @@ function pickPlaca(placa,marca,modelo,ano){
 // ═══════════════════════════════════════════════════
 //  AUTENTICAÇÃO / LOGIN
 // ═══════════════════════════════════════════════════
+
+// ── Status visual de conexão na tela de login ──────
+function setDbStatus(type, msg){
+  const icon  = document.getElementById('lg-db-icon');
+  const label = document.getElementById('lg-db-label');
+  const wrap  = document.getElementById('lg-db-status');
+  if(!icon||!label||!wrap) return;
+  const cfg = {
+    connecting:{i:'database',   c:'rgba(255,255,255,.35)', bg:'rgba(255,255,255,.04)', bc:'rgba(255,255,255,.08)'},
+    ok:        {i:'cloud_done', c:'#34d399',               bg:'rgba(52,211,153,.08)',  bc:'rgba(52,211,153,.2)'},
+    error:     {i:'cloud_off',  c:'#f87171',               bg:'rgba(248,113,113,.08)', bc:'rgba(248,113,113,.2)'},
+  };
+  const s = cfg[type]||cfg.connecting;
+  icon.textContent       = s.i;
+  icon.style.color       = s.c;
+  label.textContent      = msg;
+  label.style.color      = s.c;
+  wrap.style.background  = s.bg;
+  wrap.style.borderColor = s.bc;
+  // Habilita / desabilita formulário de login
+  const canLogin = type==='ok';
+  ['lg-user','lg-pw','lg-btn'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(el){ el.disabled=!canLogin; el.style.opacity=canLogin?'1':'0.4'; }
+  });
+  if(canLogin) setTimeout(()=>document.getElementById('lg-user')?.focus(),120);
+}
+
 function showLoginError(msg){
   const el=document.getElementById('lg-err');
   el.textContent=msg; el.classList.add('show');
@@ -1574,9 +1620,9 @@ async function doLogin(){
     return;
   }
 
-  // ── Exige conexão com o banco ──
+  // ── Verifica conexão com o banco ──
   if(!isSB){
-    showLoginError('Sem conexão com o banco de dados. Verifique a configuração do Supabase.');
+    showLoginError('Banco de dados não disponível. Recarregue a página.');
     btn.disabled=false;
     btn.innerHTML='<span class="i" style="font-size:18px;">login</span> Entrar';
     return;
@@ -1645,7 +1691,8 @@ function loginSuccess(nome,perfil){
   const unm=document.querySelector('.unm'); if(unm&&unm.id!=='topbar-nome') unm.textContent=nome;
   const uav=document.querySelector('.uav'); if(uav&&uav.id!=='topbar-av')   uav.textContent=nome[0];
   const ubdg=document.querySelector('.ubdg');if(ubdg&&ubdg.id!=='topbar-role') ubdg.textContent=badgeMap[perfil]||perfil;
-  // Apply role (hides/shows nav items + renders)
+  // Carrega dados do banco e aplica role
+  loadAll();
   applyRole(perfil);
   // Navigate
   if(perfil==='operador') nav('cons'); else nav('dash');
@@ -1678,19 +1725,24 @@ function doLogout(){
       </div>
     </div>
     <div class="lg-card">
-      <div class="lg-hd">Bem-vindo de volta</div>
-      <div class="lg-hdsub">Faça login para continuar</div>
+      <!-- Status de conexão com o banco -->
+      <div id="lg-db-status" style="display:flex;align-items:center;gap:8px;margin-bottom:1.2rem;padding:9px 12px;border-radius:10px;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);font-family:'Nunito',sans-serif;font-size:.75rem;font-weight:700;color:rgba(255,255,255,.35);">
+        <span class="i" id="lg-db-icon" style="font-size:17px;color:rgba(255,255,255,.2);">database</span>
+        <span id="lg-db-label">Conectando ao banco de dados...</span>
+      </div>
       <div class="lg-err" id="lg-err"></div>
       <label class="lg-lbl">Usuário</label>
-      <input class="lg-inp" id="lg-user" type="text" placeholder="seu@email.com ou nome" autocomplete="username" onkeydown="if(event.key==='Enter')document.getElementById('lg-pw').focus()">
+      <input class="lg-inp" id="lg-user" type="text" placeholder="seu@email.com" autocomplete="username"
+        onkeydown="if(event.key==='Enter')document.getElementById('lg-pw').focus()" disabled>
       <label class="lg-lbl">Senha</label>
       <div class="lg-pw-wrap">
-        <input class="lg-inp" id="lg-pw" type="password" placeholder="••••••••" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+        <input class="lg-inp" id="lg-pw" type="password" placeholder="••••••••" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doLogin()" disabled>
         <button class="lg-pw-toggle" onclick="togglePw()" tabindex="-1" type="button">
           <span class="i" id="lg-pw-icon" style="font-size:20px;">visibility</span>
         </button>
       </div>
-      <button class="lg-btn" id="lg-btn" onclick="doLogin()">
+      <button class="lg-btn" id="lg-btn" onclick="doLogin()" disabled style="opacity:.4;">
         <span class="i" style="font-size:18px;">login</span> Entrar
       </button>
     </div>
