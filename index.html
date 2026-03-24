@@ -424,7 +424,7 @@ tbody tr:last-child td{border-bottom:none;}
       <select class="fsel" id="cons-fco"><option value="">Todos contratos</option><option value="Em mãos">Em mãos</option><option value="0.05">5%</option><option value="*">A definir</option></select>
       <button class="badd" id="btn-add-cons" onclick="openModal('cons')"><span class="i">add</span>Nova Consignação</button>
     </div>
-    <div class="tw"><table><thead><tr><th>#</th><th>Entrada</th><th>Cliente</th><th>Placa</th><th>Modelo</th><th>Obs</th><th>Valor</th><th>Contrato</th><th>Status</th><th>Ações</th></tr></thead><tbody id="cons-tbody"></tbody></table></div>
+    <div class="tw"><table><thead><tr><th>#</th><th>Entrada</th><th>Cliente</th><th>Placa</th><th>Modelo</th><th>Ano</th><th>Obs</th><th>Valor</th><th>Contrato</th><th>Status</th><th>Ações</th></tr></thead><tbody id="cons-tbody"></tbody></table></div>
     <div class="pag" id="cons-pag"></div>
   </div>
 </div>
@@ -1032,6 +1032,7 @@ function renderCons(){
     <td style="font-weight:700;font-size:.82rem;max-width:175px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.cliente}</td>
     <td><span class="placa">${r.placa}</span></td>
     <td style="font-size:.81rem;">${r.modelo}</td>
+    <td style="font-size:.79rem;color:var(--muted);">${r.ano_veiculo||'—'}</td>
     <td>${fObs(r.observacao)}</td>
     <td>${fMoney(r.valor_contratual)}</td>
     <td>${fCtr(r.modelo_contrato)}</td>
